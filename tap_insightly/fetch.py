@@ -11,14 +11,6 @@ from tap_insightly.utility import (
 
 
 CAN_FILTER = set(["contacts", "opportunities", "organisations", "users"])
-HAS_CUSTOM_FIELDS = set(["contacts", "opportunities"])
-
-# Custom fields are an array, so will become a new table (thanks to target-redshift)
-# By default has no relationship to original resource until we add it
-def transform_custom_field(id_field, row):
-    for c in row["CUSTOMFIELDS"]:
-        c[id_field] = row[id_field]
-    return row
 
 
 def handle_resource(resource, schemas, id_field, state, mdata):
@@ -30,10 +22,6 @@ def handle_resource(resource, schemas, id_field, state, mdata):
     with metrics.record_counter(resource) as counter:
         for page in get_all_pages(resource, endpoint, qs):
             for row in page:
-                # Handle custom fields if present
-                if resource in HAS_CUSTOM_FIELDS:
-                    row = transform_custom_field(id_field, row)
-
                 write_record(row, resource, schemas[resource], mdata, extraction_time)
                 counter.increment()
 
