@@ -1,0 +1,12 @@
+{
+  "type": ["null", "object"],
+  "additionalProperties": false,
+  "properties": {
+    "NOTE_ID": { "type": ["integer"] },
+    "TITLE": { "type": ["null", "string"] },
+    "BODY": { "type": ["null", "string"] },
+    "OWNER_USER_ID": { "type": ["null", "integer"] },
+    "DATE_CREATED_UTC": { "type": ["null", "string"], "format": "date-time" },
+    "DATE_UPDATED_UTC": { "type": ["null", "string"], "format": "date-time" }
+  }
+}
