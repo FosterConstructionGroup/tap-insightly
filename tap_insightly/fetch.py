@@ -22,6 +22,8 @@ def handle_resource(resource, schemas, id_field, state, mdata):
     with metrics.record_counter(resource) as counter:
         for page in get_all_pages(resource, endpoint, qs):
             for row in page:
+                row = custom_transforms(resource, row)
+
                 write_record(row, resource, schemas[resource], mdata, extraction_time)
                 counter.increment()
 
@@ -42,6 +44,14 @@ def handle_links(parent_resource, parent_id, schema, mdata, dt):
         for row in json:
             write_record(row, "links", schema, mdata, dt)
             counter.increment()
+
+
+def custom_transforms(resource, row):
+    # Notes body can be over Redshift's 1k character limit for a column
+    if resource == "notes" and "BODY" in row and row["BODY"] != None:
+        row["BODY"] = row["BODY"][:999]
+
+    return row
 
 
 # More convenient to use but has to all be held in memory, so use write_record instead for resources with many rows
