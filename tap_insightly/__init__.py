@@ -127,7 +127,7 @@ async def do_sync(session, state, catalog, selected_stream_ids):
         singer.write_schema(stream_id, stream_schema, stream["key_properties"])
 
         schemas = {stream_id: stream_schema}
-        if sync_links:
+        if sync_links and stream_id in HAS_LINKS:
             schemas["links"] = links_schema
 
         streams_futures.append(
