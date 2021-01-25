@@ -1,11 +1,13 @@
 import os
 import json
+import asyncio
+import aiohttp
 import singer
 from singer import metadata
 
-from tap_insightly.utility import get_abs_path, session
+from tap_insightly.utility import get_abs_path, RateLimiter
 from tap_insightly.config import ID_FIELDS, HAS_LINKS
-from tap_insightly.fetch import handle_resource
+from tap_insightly.fetch import write_bookmark, handle_resource
 
 logger = singer.get_logger()
 
@@ -94,42 +96,66 @@ def get_stream_from_catalog(stream_id, catalog):
     return None
 
 
-def do_sync(config, state, catalog):
-    # Insightly API uses basic auth. Pass API key as the username and leave the password blank
-    session.auth = (config["api_key"], "")
+async def do_sync(session, state, catalog, selected_stream_ids):
+    # Only write links schema if it will be synced
+    # Note that empty lists are falsy
+    sync_links = "links" in selected_stream_ids and [
+        s for s in selected_stream_ids if s in HAS_LINKS
+    ]
+    links_schema = None  # fixes linting error
+    if sync_links:
+        links_stream = next(
+            s for s in catalog["streams"] if s["tap_stream_id"] == "links"
+        )
+        links_schema = links_stream["schema"]
+        singer.write_schema("links", links_schema, links_stream["key_properties"])
 
-    selected_stream_ids = get_selected_streams(catalog)
+    streams_to_sync = [
+        stream
+        for stream in catalog["streams"]
+        if stream["tap_stream_id"] in selected_stream_ids
+        and stream["tap_stream_id"] != "links"
+    ]
 
-    singer.write_state(state)
+    streams_futures = []
 
-    links_stream = next(s for s in catalog["streams"] if s["tap_stream_id"] == "links")
-    links_schema = links_stream["schema"]
-
-    for stream in catalog["streams"]:
+    for stream in streams_to_sync:
         stream_id = stream["tap_stream_id"]
         stream_schema = stream["schema"]
         mdata = stream["metadata"]
 
-        # links are a special case
-        if stream_id == "links":
-            continue
+        singer.write_schema(stream_id, stream_schema, stream["key_properties"])
 
-        # if stream is selected, write schema and sync
-        if stream_id in selected_stream_ids:
-            singer.write_schema(stream_id, stream_schema, stream["key_properties"])
+        schemas = {stream_id: stream_schema}
+        if sync_links:
+            schemas["links"] = links_schema
 
-            schemas = {stream_id: stream_schema}
-            if stream_id in HAS_LINKS and "links" in selected_stream_ids:
-                singer.write_schema(
-                    "links", links_schema, links_stream["key_properties"]
-                )
-                schemas["links"] = links_schema
-
-            state = handle_resource(
-                stream_id, schemas, ID_FIELDS[stream_id], state, mdata,
+        streams_futures.append(
+            handle_resource(
+                session, stream_id, schemas, ID_FIELDS[stream_id], state, mdata
             )
+        )
 
-            singer.write_state(state)
+    # await everything except links
+    streams_resolved = await asyncio.gather(*streams_futures)
+
+    # update bookmark by merging in all streams
+    for (resource, extraction_time, _links_futures) in streams_resolved:
+        state = write_bookmark(state, resource, extraction_time)
+    singer.write_state(state)
+
+    # await all links
+    await asyncio.gather(*[link for (_r, _e, ls) in streams_resolved for link in ls])
+
+
+async def run_async(config, state, catalog):
+    selected_stream_ids = get_selected_streams(catalog)
+
+    # Insightly API uses basic auth. Pass API key as the username and leave the password blank
+    auth = aiohttp.BasicAuth(login=config["api_key"], password="")
+    async with aiohttp.ClientSession(auth=auth) as session:
+        session = RateLimiter(session)
+        await do_sync(session, state, catalog, selected_stream_ids)
 
 
 @singer.utils.handle_top_exception(logger)
@@ -140,7 +166,9 @@ def main():
         do_discover()
     else:
         catalog = args.properties if args.properties else get_catalog()
-        do_sync(args.config, args.state, catalog)
+        asyncio.get_event_loop().run_until_complete(
+            run_async(args.config, args.state, catalog)
+        )
 
 
 if __name__ == "__main__":

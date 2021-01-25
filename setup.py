@@ -10,8 +10,14 @@ setup(
     url="https://samwoolerton.com",
     classifiers=["Programming Language :: Python :: 3 :: Only"],
     py_modules=["tap_insightly"],
-    install_requires=["singer-python==5.9.0", "requests==2.20.0"],
-    extras_require={"dev": ["pylint", "ipdb", "nose",]},
+    install_requires=["singer-python==5.9.0", "aiohttp==3.7.3"],
+    extras_require={
+        "dev": [
+            "pylint",
+            "ipdb",
+            "nose",
+        ]
+    },
     entry_points="""
           [console_scripts]
           tap-insightly=tap_insightly:main
