@@ -9,14 +9,14 @@ from datetime import datetime
 base_url = "https://api.insightly.com/v3.1/"
 pageSize = 500
 
-sem = asyncio.Semaphore(5)
+sem = asyncio.Semaphore(4)
 
 # Rate-limited to 5 requests per second per https://api.insightly.com/v3.1/Help#!/Overview/Technical_Details
 # API docs claim 10 per second, but in testing, anything above 5/s throws a 429
 # Note that the API seems to 429 on both concurrency and frequency, so need to use both the rate limiter and semaphore techniques
 # Adapted slightly from https://quentin.pradet.me/blog/how-do-you-rate-limit-calls-with-aiohttp.html
 class RateLimiter:
-    rate = 5  # requests per second
+    rate = 4  # requests per second
 
     def __init__(self, client):
         self.client = client
@@ -69,10 +69,7 @@ async def get_all_pages(session, source, url, extra_query_string={}):
 
     while True:
         json, resp = await get_generic(
-            session,
-            source,
-            url,
-            {**extra_query_string, "skip": skip, "top": pageSize},
+            session, source, url, {**extra_query_string, "skip": skip, "top": pageSize},
         )
         yield json
         skip += pageSize
