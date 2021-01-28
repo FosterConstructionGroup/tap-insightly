@@ -54,9 +54,13 @@ async def handle_links(session, parent_resource, parent_id, schema, mdata, dt):
 
 
 def custom_transforms(resource, row):
-    # Notes body can be over Redshift's 1k character limit for a column
+    # Redshift has a 1k character limit for a column
+    # Trimming with Python seems to intermittently fail, not sure why; easy to just trim further
+    safe_limit = 900
+
+    # Notes body can be over
     if resource == "notes" and "BODY" in row and row["BODY"] != None:
-        row["BODY"] = row["BODY"][:999]
+        row["BODY"] = row["BODY"][:safe_limit]
 
     return row
 
