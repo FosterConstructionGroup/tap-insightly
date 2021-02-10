@@ -9,4 +9,5 @@ ID_FIELDS = {
     "notes": "NOTE_ID",
 }
 
-HAS_LINKS = set(["contacts", "opportunities", "organisations", "notes"])
+# note that organisations has links but explicitly excluding here to save time and reduce API calls required
+HAS_LINKS = set(["contacts", "opportunities", "notes"])
