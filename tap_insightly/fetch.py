@@ -1,3 +1,4 @@
+import json
 import singer
 import singer.metrics as metrics
 from singer import metadata
@@ -11,6 +12,7 @@ from tap_insightly.utility import (
 
 
 CAN_FILTER = set(["contacts", "opportunities", "organisations", "users"])
+HAS_CUSTOM_FIELDS = set(["contacts", "opportunities"])
 
 
 async def handle_resource(session, resource, schemas, id_field, state, mdata):
@@ -19,12 +21,20 @@ async def handle_resource(session, resource, schemas, id_field, state, mdata):
     bookmark = get_bookmark(state, resource, "since")
     qs = {} if resource not in CAN_FILTER else {"updated_after_utc": bookmark}
     has_links = "links" in schemas
+    has_custom_fields = resource in HAS_CUSTOM_FIELDS
     links_futures = []
 
     with metrics.record_counter(resource) as counter:
         async for page in get_all_pages(session, resource, endpoint, qs):
             for row in page:
                 row = custom_transforms(resource, row)
+
+                # convert custom fields from an array to a dictionary, then convert that to a JSON string
+                if has_custom_fields:
+                    row["custom_fields"] = {}
+                    for cf in row["CUSTOMFIELDS"]:
+                        row["custom_fields"][cf["FIELD_NAME"]] = cf["FIELD_VALUE"]
+                    row["custom_fields"] = json.dumps(row["custom_fields"])
 
                 write_record(row, resource, schemas[resource], mdata, extraction_time)
                 counter.increment()

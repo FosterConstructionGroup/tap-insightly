@@ -38,17 +38,6 @@
     "STAGE_ID": { "type": ["null", "integer"] },
     "CREATED_USER_ID": { "type": ["null", "integer"] },
     "ORGANISATION_ID": { "type": ["null", "integer"] },
-    "CUSTOMFIELDS": {
-      "type": ["array"],
-      "items": {
-        "type": ["object"],
-        "properties": {
-          "OPPORTUNITY_ID": { "type": ["integer"] },
-          "FIELD_NAME": { "type": ["string"] },
-          "FIELD_VALUE": { "type": ["null", "number", "string"] },
-          "CUSTOM_FIELD_ID": { "type": ["string"] }
-        }
-      }
-    }
+    "custom_fields": { "type": ["null", "string"] }
   }
 }
