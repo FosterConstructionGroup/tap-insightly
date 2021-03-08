@@ -23,6 +23,7 @@ async def handle_resource(session, resource, schemas, id_field, state, mdata):
     has_links = "links" in schemas
     has_custom_fields = resource in HAS_CUSTOM_FIELDS
     links_futures = []
+    is_notes = resource == "notes"
 
     with metrics.record_counter(resource) as counter:
         async for page in get_all_pages(session, resource, endpoint, qs):
@@ -35,6 +36,10 @@ async def handle_resource(session, resource, schemas, id_field, state, mdata):
                     for cf in row["CUSTOMFIELDS"]:
                         row["custom_fields"][cf["FIELD_NAME"]] = cf["FIELD_VALUE"]
                     row["custom_fields"] = json.dumps(row["custom_fields"])
+
+                # See https://www.notion.so/fosters/pipelinewise-target-redshift-strips-newlines-f937185a6aec439dbbdae0e9703f834b
+                if is_notes:
+                    row["BODY"] = json.dumps(row["BODY"])
 
                 write_record(row, resource, schemas[resource], mdata, extraction_time)
                 counter.increment()
