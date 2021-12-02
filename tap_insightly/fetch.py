@@ -12,7 +12,7 @@ from tap_insightly.utility import (
 
 
 CAN_FILTER = set(["contacts", "opportunities", "organisations", "users"])
-HAS_CUSTOM_FIELDS = set(["contacts", "opportunities"])
+HAS_CUSTOM_FIELDS = set(["contacts", "opportunities", "organisations"])
 
 
 async def handle_resource(session, resource, schemas, id_field, state, mdata):

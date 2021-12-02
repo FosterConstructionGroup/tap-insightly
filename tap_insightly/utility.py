@@ -69,7 +69,10 @@ async def get_all_pages(session, source, url, extra_query_string={}):
 
     while True:
         json, resp = await get_generic(
-            session, source, url, {**extra_query_string, "skip": skip, "top": pageSize},
+            session,
+            source,
+            url,
+            {**extra_query_string, "skip": skip, "top": pageSize},
         )
         yield json
         skip += pageSize
