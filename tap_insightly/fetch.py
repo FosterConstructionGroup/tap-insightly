@@ -8,6 +8,7 @@ from tap_insightly.utility import (
     get_all_pages,
     get_endpoint,
     formatDate,
+    transform_record,
 )
 
 
@@ -29,6 +30,8 @@ async def handle_resource(session, resource, schemas, id_field, state, mdata):
         async for page in get_all_pages(session, resource, endpoint, qs):
             for row in page:
                 row = custom_transforms(resource, row)
+
+                row = transform_record(schemas[resource]["properties"], row)
 
                 # convert custom fields from an array to a dictionary, then convert that to a JSON string
                 if has_custom_fields:

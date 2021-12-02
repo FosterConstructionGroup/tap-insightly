@@ -100,3 +100,16 @@ def build_query_string(dict):
         return ""
 
     return "?" + "&".join(["{}={}".format(k, v) for k, v in dict.items()])
+
+
+def transform_record(properties, record):
+    for key in record:
+        if key in properties:
+            prop = properties.get(key)
+            # Replace linebreak character \n in strings with a space
+            if prop.get("type")[-1] == "string":
+                record[key] = (
+                    record[key].replace("\n", " ") if record[key] is not None else None
+                )
+
+    return record
