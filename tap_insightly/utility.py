@@ -107,7 +107,7 @@ def transform_record(properties, record):
         if key in properties:
             prop = properties.get(key)
             # Replace linebreak character \n in strings with a space
-            if prop.get("type")[-1] == "string":
+            if "string" in prop.get("type", []):
                 record[key] = (
                     record[key].replace("\n", " ") if record[key] is not None else None
                 )
