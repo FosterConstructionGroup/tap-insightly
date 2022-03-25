@@ -10,7 +10,11 @@ setup(
     url="https://samwoolerton.com",
     classifiers=["Programming Language :: Python :: 3 :: Only"],
     py_modules=["tap_insightly"],
-    install_requires=["singer-python==5.9.0", "aiohttp==3.7.3"],
+    install_requires=[
+        "singer-python==5.9.0",
+        "aiohttp==3.7.3",
+        "tenacity==6.3.1",
+    ],
     extras_require={
         "dev": [
             "pylint",

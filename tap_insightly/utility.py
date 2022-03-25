@@ -1,6 +1,7 @@
 import os
 import time
 import asyncio
+from tenacity import retry, stop_after_attempt
 import singer.metrics as metrics
 from datetime import datetime
 
@@ -43,6 +44,8 @@ class RateLimiter:
             self.updated_at = now
 
 
+# requests don't often fail, but we're making enough requests that the pipeline breaks every few days. Better to just retry in those rare cases
+@retry(stop=stop_after_attempt(5))
 async def get_generic(session, source, url, qs={}):
     async with sem:
         with metrics.http_request_timer(source) as timer:
