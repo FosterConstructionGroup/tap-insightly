@@ -11,7 +11,7 @@ setup(
     classifiers=["Programming Language :: Python :: 3 :: Only"],
     py_modules=["tap_insightly"],
     install_requires=[
-        "singer-python==5.9.0",
+        "pipelinewise-singer-python==1.*",
         "aiohttp==3.7.3",
         "tenacity==6.3.1",
     ],
